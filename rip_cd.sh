@@ -1,0 +1,476 @@
+#!/bin/ksh
+
+#=============================================================================
+#
+# rip_cd.sh
+# ---------
+#
+# Wrapper to lame
+#=============================================================================
+
+#-----------------------------------------------------------------------------
+# VARIABLES
+
+TOOL_DIR="/zonedata/tap-ws/local"
+PATH=/usr/bin:/usr/sbin:${TOOL_DIR}/bin
+TMPDIR="/tmp/rip-$$"
+DISCINFO="${TMPDIR}/disc_info"
+TXT_INFO="${TMPDIR}/cd_text_info"
+MP3_DIR="/export/mp3/new"
+FLAC_DIR="/export/flac/new"
+
+# Change these to alter default behaviour. Can be overridden with -m and -f
+# flags
+
+#ENCODE_MP3=true
+#ENCODE_FLAC=true
+
+typeset -i T_NO
+
+export LD_LIBRARY_PATH=${TOOL_DIR}/lib
+
+#-----------------------------------------------------------------------------
+# FUNCTIONS
+
+encode_file()
+{
+	# Wrapper to encode_mp3 and encode_flac functions. I have sufficient
+	# cores to do both jobs in parallel, but if you want to run them in
+	# series, remove the &
+	[[ -n $ENCODE_MP3 ]] && encode_mp3 $WAV &
+	[[ -n $ENCODE_FLAC ]] && encode_flac $WAV &
+}
+
+encode_mp3()
+{
+	# Encode a wav to mp3. All the tag stuff has just been set in the
+	# main(), so it's visible here. Kind of messy I know.
+	# $1 is the file to encode
+
+	DEST_DIR="${MP3_DIR}/$TARGET_DIR"
+
+	[[ -d $DEST_DIR ]] || mkdir -p $DEST_DIR
+
+	OUTFILE="${DEST_DIR}/${F_ARTIST#the_}.$(mk_fname $T_TITLE).mp3"
+
+	# Some albums have duplicate song names. Get around this by appending
+	# t_$TRACK_NO
+
+	[[ -f $OUTFILE ]] && OUTFILE="${OUTFILE%.*}_t_${T_NO}.mp3"
+
+	print "  MP3 encoding ${T_ARTIST}/$T_TITLE"
+
+	lame \
+		--vbr-new \
+		--preset standard \
+		--silent \
+		--tt "$T_TITLE" \
+		--ta "$T_ARTIST" \
+		--tl "$A_TITLE" \
+		--ty "$A_YEAR" \
+		--tn "$T_NO" \
+	$1 $OUTFILE 2>/dev/null
+
+}
+
+encode_flac()
+{
+	# Encode a wav to FLAC. All the tag stuff has just been set in the
+	# main(), so it's visible here. Kind of messy I know.
+	# $1 is the file to encode
+
+	DEST_DIR="${FLAC_DIR}/$TARGET_DIR"
+
+	[[ -d $DEST_DIR ]] || mkdir -p $DEST_DIR
+
+	OUTFILE="${DEST_DIR}/${F_ARTIST#the_}.$(mk_fname $T_TITLE).flac"
+
+	# Some albums have duplicate song names. Get around this by appending
+	# t_$TRACK_NO
+
+	[[ -f $OUTFILE ]] && OUTFILE="${OUTFILE%.*}_t_${T_NO}.flac"
+
+	print "  FLAC encoding ${T_ARTIST}/$T_TITLE"
+
+	flac \
+		-s \
+		--best \
+		--force \
+		-T "title=$T_TITLE" \
+		-T "artist=$T_ARTIST" \
+		-T "album=$A_TITLE" \
+		-T "date=$A_YEAR" \
+		-T "tracknumber=$T_NO" \
+		-o $OUTFILE \
+	$1 
+
+}
+
+get_disc_info()
+{
+	# Get disc information and put it in globally scoped variables
+	# $1 is the file to examine
+
+	A_ARTIST=$(get_val Artist $1)
+	A_TITLE=$(get_val Title $1)
+	A_YEAR=$(get_val Year $1)
+	A_GENRE=$(get_val Genre $1)
+	TOTAL_TRACKS=$(sed -n \
+		"/^[0-9]\{1,\} tracks$/s/^\([0-9]\{1,\}\) tracks$/\1/p" $1)
+}
+
+get_disc_info_cdt()
+{
+	A_ARTIST=no
+}
+
+get_val()
+{
+	# Given a key, get a value from the DISCINFO file
+	# $1 is the key
+	# $2 is the file
+
+	sed -n "/^${1}:/s/^.*${1}: *\(.*\)$/\1/p" $2
+}
+
+mk_fname()
+{
+	# Takes a string and spits out a "filename safe" version of it
+	# $* make up the string
+
+	print $* | tr -d '[:punct:]' | tr \  _ | tr '[:upper:]' '[:lower:]'
+}
+
+usage()
+{
+	cat <<-EOUSAGE
+	usage:
+	
+	  ${0##*/} <-m|-f> [-u] [-t a,b,c] [-d device]
+
+	  where
+
+	    -d  : CD-ROM device in x,y,z format
+	    -m  : rip to MP3
+	    -f  : rip to FLAC
+	    -t  : tracks to rip. Comma separated list
+	    -u  : force use of CD-TEXT for track names
+
+	EOUSAGE
+}
+
+die()
+{
+	print -u2 "ERROR: $1"
+	exit ${2:-1}
+}
+
+trap '[[ -n $PHYS_DEV ]] && eject $PHYS_DEV
+	[[ -d $DEST_DIR ]] && print "remove $DEST_DIR :: rm -fr $DEST_DIR"
+	[[ -d $TMP_DIR ]] && rm -fr $TMP_DIR
+	exit' INT
+
+#-----------------------------------------------------------------------------
+# SCRIPT STARTS HERE
+
+# Check we have the tools we need
+
+for tool in cdrecord lame flac cd-discid cddb_query cdda2wav
+do
+	whence $tool >/dev/null 2>&1 || die "$tool binary is missing"
+done
+
+while getopts "d:fmt:u" option 2>/dev/null
+do
+
+	case $option in
+
+		d)  DEVICE=$OPTARG
+			;;
+
+		f)	ENCODE_FLAC=true
+			;;
+
+		m)	ENCODE_MP3=true
+			;;
+
+		t)	TRACK_LIST=",${OPTARG},"
+			;;
+
+		u)	FORCE_CDTXT=true
+			;;
+
+		*)	usage
+			exit 2
+	esac
+
+done
+
+
+# Get the CD-ROM device if we haven't been given it. If we have been given
+# one, check it looks valid.
+
+if [[ -z $DEVICE ]]
+then
+	DEVICE=$(cdrecord -scanbus 2>/dev/null | \
+	sed -n '/CD-ROM/s/^.*\([0-9],[0-9],[0-9]\).*$/\1/p')
+else
+	cdrecord -scanbus 2>/dev/null | egrep -s "${DEVICE}.*CD-ROM" \
+	|| die "supplied device does not appear to be a CD-ROM [$DEVICE]"
+fi
+
+# oh, and make sure that device isn't already being used. We mustn't cross
+# the streams
+
+pgrep -f cdda2wav.*dev=$DEVICE >/dev/null && die "device $DEVICE in use"
+
+# What are we encoding to? Anything?
+
+[[ -z ${ENCODE_FLAC}${ENCODE_MP3} ]] \
+&& die "nothing to encode to. Please supply -m and/or -f"
+
+# We need to know the device name cdrecord uses, and also the proper
+# physical device path. 
+
+print $DEVICE | tr , \  | read c t d
+
+PHYS_DEV="/dev/rdsk/c${c}t${t}d${d}s2"
+
+# Is the physical device there?
+
+[[ -h $PHYS_DEV ]] || die "no physical device path [$PHYS_DEV]. Run devfsadm"
+
+mkdir -p $TMPDIR
+
+# Everything looks good. Let's stop volume management, if it's running
+
+if [[ $(svcs -Ho STATE rmvolmgr) = "enabled" ]]
+then
+	svcadm disable -t rmvolmgr
+	ENABLE_VOLMGT=true
+fi
+
+# If we're still running, we're ready to find out what the disc is. This can
+# get complicated, because CD IDs aren't unique. Grrr. These are the genres
+# that seem to work for me, but you can also add 
+# folk jazz country blues
+# newage reggae classical soundtrack data
+
+if [[ -z $FORCE_CDTXT ]]
+then
+	i=0	# counts potential discs
+
+	DISC_ID=$(cd-discid $PHYS_DEV 2>/dev/null)
+
+	print DISC_ID is $DISC_ID
+
+	for genre in misc rock country \
+		folk jazz blues newage soundtrack data classical reggae 
+	do
+		cddb_query -q read $genre ${DISC_ID%% *} >${DISCINFO}_$i \
+			&& i=$(($i + 1))
+	done
+
+fi
+
+if [[ $i == 0 || -n $FORCE_CDTXT ]]
+then
+	# CDDB didn't give us a match. Can we get anything by CD-TEXT?
+
+	print "No match found by CDDB. Trying CD-TEXT"
+
+	# Get the disc info. cdda2wav writes to stderr by default
+
+	cdda2wav \
+		dev=$DEVICE \
+		-info-only \
+		-no-infofile \
+		-paranoia \
+	2>$TXT_INFO 
+
+	[[ -s $TXT_INFO ]] \
+		|| die "nothing in CD-Text info file."
+
+	# Set a couple of default values, and work some other info out 
+
+	D_ARTIST="Unknown Artist"
+	D_TRACKS=$(sed -n \
+	"/total tracks/s/^.*total tracks:\([0-9]*\).*$/\1/p" $TXT_INFO)
+	D_TIME=$(sed -n "/total time/s/^.*total time \([^\.]*\).*$/\1/p" \
+	$TXT_INFO)
+	D_LEN="$D_TIME ($(( ${D_TIME%:*} * 60 + ${D_TIME#*:})) seconds)"
+
+	if egrep -s "CD-Text: detected" $TXT_INFO
+	then
+		# Convert cdda2wav output into the same form cddb_query returns
+
+		# XXX This is imperfect. First attempt, and probably won't work well
+		# for all cases
+	
+		# CD-Text only seems to give us an album name and track titles
+
+		print "Got CD-Text song titles:"
+
+		egrep "[0-9]: " $TXT_INFO
+
+		print "\nx :: exit and eject\n"
+		read "D_ARTIST?or enter artist name --> "
+		
+		if [[ x$D_ARTIST == xx || x$D_ARTIST = x ]]
+		then
+			eject $PHYS_DEV
+			exit 0
+		fi
+
+		read "D_ALBUM?enter album title --> "
+
+		cat <<-EODATA >$DISCINFO
+			Artist:   $D_ARTIST
+			Title:    $D_ALBUM
+			Ext.data: 
+			Genre:    Alternative
+			Year:     2009
+			Length:   $D_LEN
+			$D_TRACKS tracks
+		EODATA
+
+		sed -n -e "s/^Track  /Track 0/" -e \
+		"s/Track \([ 0-9]\)\([^ ]*\): \(.*\)$/  \[\1\2\] \3 by $D_ARTIST/p" \
+		$TXT_INFO >>$DISCINFO
+
+	else
+		print "No CD-Text info found. Proceeding as unknown album."
+
+		read "D_ARTIST?enter artist name (x to quit) --> "
+		
+		if [[ x$D_ARTIST == xx || x$D_ARTIST = x ]]
+		then
+			eject $PHYS_DEV
+			exit 0
+		fi
+
+		read "D_ALBUM?enter album title --> "
+
+		cat <<-EODATA >$DISCINFO
+			Artist:   $D_ARTIST
+			Title:    $D_ALBUM
+			Ext.data: 
+			Genre:    Alternative
+			Year:     2009
+			Length:   $D_LEN
+			$D_TRACKS tracks
+		EODATA
+
+		typeset -Z2 TN
+
+		TN=1
+
+		while [[ $TN -le $D_TRACKS ]]
+		do
+			print "  [$TN] 'Track $TN' by $D_ARTIST" 
+			$((TN = $TN + 1))
+		done >> $DISCINFO
+
+	fi
+
+elif [[ $i == 1 ]]
+then
+	mv ${DISCINFO}_0 $DISCINFO
+else
+	j=1
+
+	find $TMPDIR -name ${DISCINFO##*/}_\* -a -size +0 | while read file
+	do
+		get_disc_info $file
+		print "\n$j :: $A_TITLE by $A_ARTIST ($A_YEAR)"
+		grep '\[01\]' $file 
+		t_arr[$j]=$file
+		j=$(($j + 1))
+	done
+	
+	print "\nx :: exit and eject\n"
+	read "num?ID to use --> "
+	
+	if [[ x$num == xx || x$num = x ]]
+	then
+		eject $PHYS_DEV
+		exit 0
+	fi
+	
+	mv ${t_arr[$num]} $DISCINFO
+fi
+
+print "catting discinfo"
+cat $DISCINFO
+
+# Now we can start ripping and encoding. We rip wav files to a temporary
+# directory, then encode them into place
+
+# Who's the disk by, and what's it called? We need this information for all
+# the tracks
+
+get_disc_info $DISCINFO
+
+print "Ripping \"$A_TITLE\" by $A_ARTIST ($A_YEAR)"
+
+# I don't like "the"s on my band names, and I don't like various_artists --
+# sounds too K-Tel.
+
+print $A_ARTIST | egrep -si "^various " && A_ARTIST="various"
+
+TARGET_DIR="$(mk_fname $A_ARTIST).$(mk_fname $A_TITLE)"
+TARGET_DIR=${TARGET_DIR#the_}
+
+# Now we can start ripping. I hope they don't change the output format of
+# cddb_query. I expect two spaces, a two digit number in square brackets, a
+# space, and a strong quoted title
+
+egrep "^  \[[0-9][0-9]\] '" $DISCINFO | while read line
+do
+	i=${line%%\]*}
+	T_NO=${i#\[}
+
+	# If we were given a list of track numbers, ignore tracks whose number
+	# is not in that list
+
+	[[ -n $TRACK_LIST ]] && [[ $TRACK_LIST != *",${T_NO}," ]] \
+		&& continue
+
+	i=${line#*\'}
+	T_TITLE=${i%%\' by*}
+	i=${line#*\' by }
+	T_ARTIST=${i% \(*\)}
+	F_ARTIST=$(mk_fname $T_ARTIST)
+	WAV="${TMPDIR}/track_${T_NO}.wav"
+
+	print "Ripping track ${T_NO}/$TOTAL_TRACKS of '${A_TITLE}'"
+
+	cdda2wav \
+		dev=$DEVICE \
+		-c 2 \
+		--stereo \
+		--max \
+		--no-infofile \
+		-b 16 \
+		-O wav \
+		--quiet \
+		-Q \
+		-paranoia \
+		-t $T_NO \
+	$WAV
+
+	encode_file $WAV
+
+	#print $T_NO / $TOTAL_TRACKS :: $T_TITLE :: $T_ARTIST
+done
+
+# Wait for the encoding jobs to finish. They're backgrounded, remember
+
+wait
+
+rm -fr $TMPDIR
+
+[[ -n $ENABLE_VOLMGT ]] && svcadm enable rmvolmgr
+
+eject $PHYS_DEV
+
