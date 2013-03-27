@@ -21,11 +21,12 @@
 typeset -l FILETYPE
 typeset -A TRACK
 
+PATH=/usr/bin:/usr/local/bin
 
 #-----------------------------------------------------------------------------
 # FUNCTIONS
 
-. audio_functions.ksh
+. ${0%/*}/audio_functions.ksh
 
 function usage
 {
@@ -46,7 +47,8 @@ function usage
 		     
 		    bump=n     : increase track number by 'n'
 		    sort       : put loose files in album-specific directories
-		    transcode  : convert files to MP3, preserving tags
+		    transcode  : convert flac files to MP3, preserving tags
+		    toflac     : convert wav files to flac
 		    number     : number tracks, assuming the filename begins with
 		                 the track number
 		    inumber    : number tracks interactively
@@ -118,6 +120,10 @@ case $CMD in
 		FUNC=tag2name
 		;;
 
+	"toflac")
+		FUNC=encode_flac
+		;;
+
 	"transcode")
 		FUNC=transcode_flac
 		;;
@@ -184,7 +190,8 @@ do
 			print "'${file}' is not an MP3"
 		fi
 
-	else
+	elif [[ $FILETYPE != "wav" ]]
+	then
 		print "'${FILETYPE}' files are not supported."
 		continue
 	fi

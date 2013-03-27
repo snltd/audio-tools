@@ -25,6 +25,8 @@ FLAC_DIR="/export/flac/new"
 #ENCODE_MP3=true
 #ENCODE_FLAC=true
 
+. ${0%/*}/audio_functions.ksh
+
 typeset -i T_NO
 
 export LD_LIBRARY_PATH=${TOOL_DIR}/lib
@@ -39,71 +41,6 @@ encode_file()
 	# series, remove the &
 	[[ -n $ENCODE_MP3 ]] && encode_mp3 $WAV &
 	[[ -n $ENCODE_FLAC ]] && encode_flac $WAV &
-}
-
-encode_mp3()
-{
-	# Encode a wav to mp3. All the tag stuff has just been set in the
-	# main(), so it's visible here. Kind of messy I know.
-	# $1 is the file to encode
-
-	DEST_DIR="${MP3_DIR}/$TARGET_DIR"
-
-	[[ -d $DEST_DIR ]] || mkdir -p $DEST_DIR
-
-	OUTFILE="${DEST_DIR}/${F_ARTIST#the_}.$(mk_fname $T_TITLE).mp3"
-
-	# Some albums have duplicate song names. Get around this by appending
-	# t_$TRACK_NO
-
-	[[ -f $OUTFILE ]] && OUTFILE="${OUTFILE%.*}_t_${T_NO}.mp3"
-
-	print "  MP3 encoding ${T_ARTIST}/$T_TITLE"
-
-	lame \
-		--vbr-new \
-		--preset standard \
-		--silent \
-		--tt "$T_TITLE" \
-		--ta "$T_ARTIST" \
-		--tl "$A_TITLE" \
-		--ty "$A_YEAR" \
-		--tn "$T_NO" \
-	$1 $OUTFILE 2>/dev/null
-
-}
-
-encode_flac()
-{
-	# Encode a wav to FLAC. All the tag stuff has just been set in the
-	# main(), so it's visible here. Kind of messy I know.
-	# $1 is the file to encode
-
-	DEST_DIR="${FLAC_DIR}/$TARGET_DIR"
-
-	[[ -d $DEST_DIR ]] || mkdir -p $DEST_DIR
-
-	OUTFILE="${DEST_DIR}/${F_ARTIST#the_}.$(mk_fname $T_TITLE).flac"
-
-	# Some albums have duplicate song names. Get around this by appending
-	# t_$TRACK_NO
-
-	[[ -f $OUTFILE ]] && OUTFILE="${OUTFILE%.*}_t_${T_NO}.flac"
-
-	print "  FLAC encoding ${T_ARTIST}/$T_TITLE"
-
-	flac \
-		-s \
-		--best \
-		--force \
-		-T "title=$T_TITLE" \
-		-T "artist=$T_ARTIST" \
-		-T "album=$A_TITLE" \
-		-T "date=$A_YEAR" \
-		-T "tracknumber=$T_NO" \
-		-o $OUTFILE \
-	$1 
-
 }
 
 get_disc_info()

@@ -260,6 +260,11 @@ function get_track_info_flac
 	done
 }
 
+function get_track_info_wav
+{
+	return
+}
+
 function get_val_mp3
 {
 	# $1 is the key
@@ -359,6 +364,84 @@ transcode_flac()
 	
 }
 
+encode_mp3()
+{
+	# Encode a wav to mp3. All the tag stuff has just been set in the
+	# main(), so it's visible here. Kind of messy I know.
+	# $1 is the file to encode
+
+	DEST_DIR="${MP3_DIR}/$TARGET_DIR"
+
+	[[ -d $DEST_DIR ]] || mkdir -p "$DEST_DIR"
+
+	OUTFILE="${DEST_DIR}/${F_ARTIST#the_}.$(mk_fname $T_TITLE).mp3"
+
+	# Some albums have duplicate song names. Get around this by appending
+	# t_$TRACK_NO
+
+	[[ -f $OUTFILE ]] && OUTFILE="${OUTFILE%.*}_t_${T_NO}.mp3"
+
+	print "  MP3 encoding ${T_ARTIST}/$T_TITLE"
+
+	lame \
+		--vbr-new \
+		--preset standard \
+		--silent \
+		--tt "$T_TITLE" \
+		--ta "$T_ARTIST" \
+		--tl "$A_TITLE" \
+		--ty "$A_YEAR" \
+		--tn "$T_NO" \
+	$1 $OUTFILE 2>/dev/null
+
+}
+
+encode_flac()
+{
+	# Encode a wav to FLAC. All the tag stuff has just been set in the
+	# main(), so it's visible here. Kind of messy I know.
+	# $1 is the file to encode
+
+	if [[ -n $FLAC_DIR ]]
+	then
+		DEST_DIR="${FLAC_DIR}/$TARGET_DIR"
+	else
+		DEST_DIR=${1%/*}
+
+		[[ "$DEST_DIR" == "$1" ]] && DEST_DIR=$(pwd)
+	fi
+
+
+	[[ -d $DEST_DIR ]] || mkdir -p "$DEST_DIR"
+
+	if [[ -n $F_ARTIST ]]
+	then
+		OUTFILE="${DEST_DIR}/${F_ARTIST#the_}.$(mk_fname $T_TITLE).flac"
+	else
+		OUTFILE="${1%.*}.flac"
+	fi
+
+	# Some albums have duplicate song names. Get around this by appending
+	# t_$TRACK_NO
+
+	[[ -f $OUTFILE && -n $T_NO ]] && OUTFILE="${OUTFILE%.*}_t_${T_NO}.flac"
+
+	print "  encoding '$1'"
+
+	flac \
+		-s \
+		--best \
+		--force \
+		-T "title=$T_TITLE" \
+		-T "artist=$T_ARTIST" \
+		-T "album=$A_TITLE" \
+		-T "date=$A_YEAR" \
+		-T "tracknumber=$T_NO" \
+		-o "$OUTFILE" \
+	"$1"
+
+}
+
 function show_track_info
 {
 	# Display basic information on the given file
@@ -431,12 +514,11 @@ function sort_files
 
 		# Make the directory if it doesn't exist
 
-		[[ -d $adir ]] \
-			|| mkdir -p $adir
+		[[ -d "$adir" ]] || mkdir -p "$adir"
 
 		# if we couldn't do that, issue a warning and continue
 
-		if [[ ! -d $adir ]]
+		if [[ ! -d "$adir" ]]
 		then
 			print "cannot create directory [${adir}]"
 			return
@@ -445,7 +527,7 @@ function sort_files
 		# Now move the file
 
 		print -- "  $adir <-- $1"
-		mv -i "$1" $adir
+		mv -i "$1" "$adir"
 	fi
 
 }
