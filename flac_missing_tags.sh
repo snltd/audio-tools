@@ -27,18 +27,36 @@ BASE="/storage/flac"
 [[ -n $1 ]] && DIR=$1 || DIR=$BASE
 
 
-find $DIR -name \*flac | while read file
+find $DIR -type d | sort | while read dir
 do
-	aud.sh info $file | grep " : " | while read key sep value
-	do
-		[[ $key == "filename" ]] && continue
 
-		if [[ -z $value ]]
-		then
-			print "missing '$key'"
-			print "  ${file#$DIR/}"
-		fi
+	[[ $(ls -l $dir | grep -c "^-.*flac$") == 0 ]] && continue
+
+	# Look at the files in this directory and see if they're missing any
+	# tags. We report a directory has missing tags if ANY of the files
+	# are.
+
+	find $dir -name \*.flac | while read file
+	do
+		MISSING=""
+
+		aud.sh info $file | grep " : " | while read key sep value
+		do
+			[[ $key == "filename" ]] && continue
+			[[ -z $value ]] && MISSING="$MISSING $key"
+		done
 
 	done
+	
+	if [[ -n $MISSING ]]
+	then
+		print "\n${dir##*/}"
+		
+		for tag in $MISSING
+		do
+			print "  $tag"
+		done
+
+	fi
 
 done
