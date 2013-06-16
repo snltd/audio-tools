@@ -22,6 +22,7 @@ typeset -l FILETYPE
 typeset -A TRACK
 
 PATH=/usr/bin:/usr/local/bin
+MYNAME=$0
 
 #-----------------------------------------------------------------------------
 # FUNCTIONS
@@ -32,15 +33,16 @@ function usage
 {
 	cat<<-EOUSAGE
 
-		  usage: ${0##*/} <command> <files>
+		  usage: ${MYNAME##*/} <command> <files>
 
 		  commands:
 
-		    artist=str : set artist/band name tag to 'txt'
-		    track=str  : set track title tag to 'txt'
-		    album=str  : set album title tag to 'txt'
-		    title=str  : set track title tag to 'txt'
-		    genre=str  : set tag to text string txt
+		    artist=str : set artist/band name tag to 'str'
+		    track=str  : set track number tag to 'str'
+		    album=str  : set album title tag to 'str'
+		    title=str  : set track title tag to 'str'
+		    genre=str  : set genre tag to text string 'str'
+		    year=str  :  set year tag to text string 'str'
 		     
 		    name2tag   : tag the file from the filename. Assumes artist.title
 		    tag2name   : rename a file from the ID3/FLAC tag
