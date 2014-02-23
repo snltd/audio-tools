@@ -3,7 +3,7 @@
 # Functions for FLAC and MP3 related stuff
 #
 #
-# GLOBAL VARIABLES 
+# GLOBAL VARIABLES
 #
 # TRACK(
 #   T_TITLE   : track title (free string)
@@ -21,7 +21,7 @@
 
 qualify_path()
 {
-    # Make a path fully qualified, if it isn't already. 
+    # Make a path fully qualified, if it isn't already.
     # $1 is the path to qualify
 
     if [[ $1 == /* ]]
@@ -47,7 +47,7 @@ function is_int
 
 	[[ -z $1 ]] || print $1 | egrep -s "[^0-9]" \
 		&& return 1 \
-		|| return 0 
+		|| return 0
 
 }
 
@@ -101,9 +101,9 @@ function get_val_flac
 
 	# $1 is the key
 	# $2 is the file
-	
+
 	typeset val
-	
+
 	val=$(metaflac --show-tag=$1 "$2" 2>/dev/null)
 
 	print -- ${val#*=}
@@ -124,13 +124,13 @@ function set_val
 	# $4 is the file
 
 	typeset cmdkey
-	
+
 	if [[ $# != 4 ]]
 	then
 		print "set_val requires four args."
 		return 1
 	fi
-		
+
 	if [[ ! -f "$4" ]]
 	then
 		print "file does not exist. [$4]"
@@ -147,7 +147,7 @@ function set_val
 	then
 
 		case $2 in
-			
+
 			title|artist|album|genre)
 				cmdkey=$2
 				;;
@@ -172,7 +172,7 @@ function set_val
 	then
 
 		case $2 in
-			
+
 			artist|album|track|total|year|genre)
 				cmdkey=$2
 				;;
@@ -215,7 +215,7 @@ function get_track_info_flac
 		val=${l#*=}
 
 		case $key in
-			
+
 			"sample_rate")
 
 				# Remove the space before the 'Hz'
@@ -269,9 +269,9 @@ function get_val_mp3
 {
 	# $1 is the key
 	# $2 is the file
-	
+
 	typeset val
-	
+
 	val=$(id3info "$2" | grep $1)
 
 	print -- ${val#*: }
@@ -292,7 +292,7 @@ function get_track_info_mp3
 	T_NO=$(get_val_mp3 "TRCK" "$file")
 
 	# The following works for most files I've found
-	
+
 	TRACK=(
 		[BITRATE]=$(get_bitrate_mp3 "$file")
 		[T_TITLE]=$(get_val_mp3 "TIT2" "$file")
@@ -338,7 +338,7 @@ transcode_flac()
 	# $1 is the source file
 	# Requires the TRACK variable is set
 
-	if ! is_flac "$1" 
+	if ! is_flac "$1"
 	then
 		print "ERROR: $1 is not a FLAC"
 		return 1
@@ -347,7 +347,7 @@ transcode_flac()
 	OUT="$(qualify_path ${1%.*}).mp3"
 
 	print -n "\n->$1\n<-${OUT##*/}\nencoding : "
-	
+
 	flac -dsc $1 | lame \
 		-h \
 		--vbr-new \
@@ -361,7 +361,7 @@ transcode_flac()
 	- $OUT 2>/dev/null \
 		&& print "ok" \
 		|| print "FAILED"
-	
+
 }
 
 encode_mp3()
@@ -472,16 +472,16 @@ function bump_track_no
 
 	# $1 is the file to work on
 	# $2 is the number to add
-	
+
 	# We know $2 is valid, make sure the existing track number is
 
 	typeset now=${TRACK[T_NO]}
 
-	if is_int $now 
+	if is_int $now
 	then
-		newval=$(( $now + $2 )) 
+		newval=$(( $now + $2 ))
 		print "${1##*/}\n  track number [${now}] -> $newval\n"
-		set_val $FILETYPE "track" $newval $1
+		set_val $FILETYPE "track" $newval "$1"
 	else
 		print "$now not valid"
 	fi
@@ -492,7 +492,7 @@ function sort_files
 {
 	# Put loose files in a directory of the form artist.album
 
-	typeset adir 
+	typeset adir
 
 	if [[ ! -f "$1" ]]
 	then
@@ -555,7 +555,7 @@ function get_dir
 {
 	# Some functions need to know what directory the files it's looking at
 	# are in. This helps, by giving a directory if one hasn't been supplied.
-	# $1 is the file 
+	# $1 is the file
 
 	if [[ $1 == *"/"* ]]
 	then
@@ -584,7 +584,7 @@ function name2tag
 	artist="$(mk_title ${file%%.*})"
 	album="$(mk_title ${album#*.})"
 	title="$(mk_title ${title%.*})"
-	
+
 	cat<<-EOINFO
 	$file
 	   album : $album
@@ -638,7 +638,7 @@ function set_value
 	# $1 is the file
 	# $2 is key=value string
 
-	typeset -l key 
+	typeset -l key
 	typeset val
 
 	val=${2#*=}
@@ -660,7 +660,7 @@ function number
 
 	if [[ -n $num ]]
 	then
-		t_num=${num#0} 
+		t_num=${num#0}
 		set_value "$1" "track=$t_num"
 	fi
 }
