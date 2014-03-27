@@ -6,6 +6,9 @@ myself than to simply use someone else's things. They're pretty
 full-featured, and I find them useful on a regular basis. They're
 definitely geared towards the anally-retentive FLAC user.
 
+No sane person would ever write something like this in shell. I know
+that, and I wouldn't do it now. Some of these date from about 2001.
+
 # Requirements
 
 To use these scripts fully you must have
@@ -23,7 +26,7 @@ several commands. You can use it to manipulate FLAC, WAV, and MP3 files.
 Unless otherwise stated, commands work for both FLAC and MP3.
 
 ### Usage
- 
+
     aud.sh <command> <files>
 
 The following commands are available.
