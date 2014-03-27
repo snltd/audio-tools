@@ -64,28 +64,82 @@ function mk_fname
 
 function mk_title
 {
-	# Inverse of mk_fname(). Capitalises and add spaces. Doesn't do a GREAT
-	# job, but near enough.
+    # Inverse of mk_fname(). Capitalises and add spaces. Doesn't do a
+    # GREAT job, but near enough.
 	# $* is the string to work on
 
-	NOCAPSLIST=" and of in the for on it its is a "
-	typeset -i i=0
+    # The following words aren't capitalized unless they're the first or
+    # last word in the title.
+
+	NOCAPSLIST=" a aboard about above absent across after against along
+    alongside amid amidst among amongst an and around as as aslant
+    astride at athwart atop barring before behind below beneath beside
+    besides between beyond but by despite down during except failing
+    following for for from in is inside into like mid minus near next
+    nor notwithstanding of off on onto opposite or out outside over past
+    per plus regarding round save since so than the through throughout
+    till times to toward towards under underneath unlike until up upon
+    via vs when with within without worth yet "
+
+    # The following word pairs get expanded from the former to the
+    # latter. I think it's more likely that the title contains "can't"
+    # or "won't" than "cant" or "wont".
+
+    EXPANDLIST=" dont=Don't youre=You're wont=Won't im=I'm cant=Can't
+    thats=That's shes=She's &=and couldnt=Couldn't etc=Etc.
+    wouldnt=Wouldn't hes=He's "
+
+	typeset -i i=1
 	typeset -u initial
 
-	for word in $(print $* | tr "_" " ")
+    words=$(print $* | tr _ "\n" | grep -c .)
+
+	for word in $(print $* | tr _ ' ')
 	do
-		if [[ $i -gt 0 && $NOCAPSLIST == *" $word "* ]]
+
+		if [[ $i -gt 1 && $NOCAPSLIST == *" $word "* && $i != $words ]]
 		then
-			print -n -- "$word "
-		else
+			pr_word=$word
+        else
 			initial=${word:0:1}
-			print -n -- "${initial}${word:1} "
+			pr_word=${initial}${word:1}
 		fi
+
+        if [[ $EXPANDLIST == *" ${word}="* ]]
+        then
+            expand_to=${EXPANDLIST##* $word=}
+            pr_word=${expand_to%% *}
+        fi
+
+        # In my filenames I replace an opening bracket with a dash. I
+        # think the first parenthesised word should always be
+        # capitalized
+
+        if [[ $pr_word == *-* ]]
+        then
+            first_word=${pr_word%%-*}
+            word="${pr_word##*-}"
+			initial=${word:0:1}
+
+            if [[ $EXPANDLIST == *" ${word}="* ]]
+            then
+                expand_to=${EXPANDLIST##* $word=}
+                pr_word="${first_word} (${expand_to%% *}"
+            else
+			    pr_word="${first_word} (${initial}${word:1}"
+            fi
+
+            close_bracket=true
+        fi
+
+        print -n -- $pr_word
+
+        [[ $i == $words ]] || print -n " "
 
 		((i++))
 	done
 
-	print
+    [[ -n $close_bracket ]] && print ")" || print
 }
 
 function is_flac
