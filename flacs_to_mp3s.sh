@@ -1,0 +1,79 @@
+#!/bin/ksh
+#
+#=============================================================================
+#
+# flacs_to_mp3s.sh
+# ----------------
+#
+# Runs through through a FLAC tree, and makes sure you have an MP3 of
+# everything in it. Also removes any MP3s whose parent album is in the
+# FLAC tree, but whose equivalently named file (s/.mp3/.flac/) is not.
+#
+# Require aud.sh
+#
+# R Fisher 02/2014
+#
+#=============================================================================
+
+#-----------------------------------------------------------------------------
+# VARIABLES
+
+FLAC="/storage/flac"
+MP3="/storage/mp3"
+AUD_SH="${HOME}/bin/aud.sh"
+
+#-----------------------------------------------------------------------------
+# SCRIPT STARTS HERE
+
+find $FLAC -type d | while read src
+do
+    dest="${MP3}/${src#$FLAC/}"
+
+    # Mirror the FLAC tree in the MP3 tree
+
+    [[ -d $dest ]] || mkdir -p $dest
+
+    # Only look further at directories with FLACs in
+
+    if ls $src/*flac >/dev/null 2>&1
+    then
+
+        # Look at each FLAC, and if an MP3 doesn't exist, make it.
+        # aud.sh creates MP3s in the source directory, so we'll have to
+        # move it across ourselves.
+
+        ls $src | grep "\.flac$" | while read f
+        do
+            m="${f%flac}mp3"
+            if [[ ! -f "${dest}/$m" ]]
+            then
+                $AUD_SH transcode "${src}/$f" \
+                    && mv "${src}/$m" "$dest" \
+                    || rm "${src}/$m"
+            fi
+
+        done
+
+        # Look at the MP3s, and if there isn't a corresponding FLAC,
+        # remove it. Skip the tracks/ directory, which is special.
+
+        if [[ ${src##*/} != "tracks" ]]
+        then
+
+            ls $dest | grep "\.mp3$" | while read f
+            do
+                fl="${f%mp3}flac"
+
+                if [[ ! -f "${src}/$fl" ]]
+                then
+                    print -n "removing ${dest}/$f: "
+                    rm -f "${dest}/$f" && print "ok" || print "FAILED"
+                fi
+
+            done
+
+        fi
+
+    fi
+
+done
