@@ -87,7 +87,7 @@ function mk_title
 
     EXPANDLIST=" dont=Don't youre=You're wont=Won't im=I'm cant=Can't
     thats=That's shes=She's &=and couldnt=Couldn't etc=Etc.
-    wouldnt=Wouldn't hes=He's "
+    wouldnt=Wouldn't hes=He's youve=You've"
 
 	typeset -i i=1
 	typeset -u initial
