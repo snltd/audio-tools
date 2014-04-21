@@ -83,11 +83,13 @@ function mk_title
 
     # The following word pairs get expanded from the former to the
     # latter. I think it's more likely that the title contains "can't"
-    # or "won't" than "cant" or "wont".
+    # or "won't" than "cant" or "wont". It's/its is more
+    # difficult...
 
     EXPANDLIST=" dont=Don't youre=You're wont=Won't im=I'm cant=Can't
     thats=That's shes=She's &=and couldnt=Couldn't etc=Etc.
-    wouldnt=Wouldn't hes=He's youve=You've"
+    wouldnt=Wouldn't hes=He's youve=You've youll=You'll its=It's
+    weve=We've"
 
 	typeset -i i=1
 	typeset -u initial
