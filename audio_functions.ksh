@@ -19,7 +19,7 @@
 
 #=============================================================================
 
-qualify_path()
+function qualify_path
 {
     # Make a path fully qualified, if it isn't already.
     # $1 is the path to qualify
@@ -488,13 +488,14 @@ encode_flac()
 		-s \
 		--best \
 		--force \
+        --keep-foreign-metadata \
 		-T "title=$T_TITLE" \
 		-T "artist=$T_ARTIST" \
 		-T "album=$A_TITLE" \
 		-T "date=$A_YEAR" \
 		-T "tracknumber=$T_NO" \
 		-o "$OUTFILE" \
-	"$1"
+	"$1" 2>/dev/null
 
 }
 
@@ -758,3 +759,36 @@ function inumber_files
 
 	[[ -n $num ]] && set_value "$1" "track=$num"
 }
+
+function strip_flac
+{
+    # Remove embedded images and tags which conflict with our standards.
+    # Also remove padding to save a tiny amount of space. I also want
+    # the modification time of the file to be unaffected.
+
+    # $1 is the filename
+
+    TFILE=$(mktemp)
+    touch -r "$1" $TFILE
+
+    print "stripping $1"
+
+    if metaflac --list "$1" | egrep -s "ALBUM ARTIST|ALBUMARTIST|ENSEMBLE"
+    then
+        print "  moving extraneous tags"
+        metaflac --remove-tag=ALBUMARTIST \
+                --remove-tag="ALBUM ARTIST" \
+                --remove-tag=ENSEMBLE "$1"
+    fi
+
+    if metaflac --list "$1" | egrep -s PICTURE
+    then
+        print "  removing PICTURE"
+        metaflac --remove --block-type=PICTURE,PADDING --dont-use-padding "$1"
+    fi
+
+    touch -r $TFILE "$1"
+    rm $TFILE
+}
+
+

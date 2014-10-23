@@ -43,10 +43,10 @@ function usage
 		    title=str  : set track title tag to 'str'
 		    genre=str  : set genre tag to text string 'str'
 		    year=str  :  set year tag to text string 'str'
-		     
+
 		    name2tag   : tag the file from the filename. Assumes artist.title
 		    tag2name   : rename a file from the ID3/FLAC tag
-		     
+
 		    bump=n     : increase track number by 'n'
 		    sort       : put loose files in album-specific directories
 		    transcode  : convert flac files to MP3, preserving tags
@@ -54,11 +54,11 @@ function usage
 		    number     : number tracks, assuming the filename begins with
 		                 the track number
 		    inumber    : number tracks interactively
-		     
+
 		    info       : show track information
 		    verify     : verify files -- only works for FLACs
 		    notag=str  : does file have the 'str' tag.
-		    	
+
 		    help       : print this message
 
 	EOUSAGE
@@ -93,10 +93,10 @@ fi
 
 shift
 
-case $CMD in 
+case $CMD in
 
 	artist|title|album|genre|track|year)
-		FUNC=set_value 
+		FUNC=set_value
 		EXTRA_ARGS="${CMD}=$CARG"
 		NOTRACK=true
 		;;
@@ -109,10 +109,10 @@ case $CMD in
 		EXTRA_ARGS=$CARG
 		;;
 
-	"info")	
-		FUNC=show_track_info 
+	"info")
+		FUNC=show_track_info
 		;;
-	
+
 	"name2tag")
 		FUNC=name2tag
 		NOTRACK=true
@@ -143,7 +143,7 @@ case $CMD in
 		FUNC=verify_files
 		NOTRACK=true
 		;;
-	
+
 	"notag")
 		FUNC=notag_files
 		EXTRA_ARGS=$CARG
@@ -154,6 +154,10 @@ case $CMD in
 		FUNC=inumber_files
 		NOTRACK=true
 		;;
+
+    "strip")
+        FUNC=strip_flac
+        ;;
 
 	*)	usage
 		;;
@@ -177,20 +181,20 @@ do
 
 	if [[ $FILETYPE == "flac" ]]
 	then
-		
+
 		if ! metaflac --list "$file" >/dev/null 2>&1
 		then
 			print "'${file}' is not a FLAC"
 			continue
 		fi
-	
+
 	elif [[ $FILETYPE == "mp3" ]]
 	then
-
-		if ! file "$file" | egrep -s "MPEG-1"
-		then
-			print "'${file}' is not an MP3"
-		fi
+        :
+		#if ! file "$file" | egrep -s "MPEG-1|Audio"
+		#then
+			#print "'${file}' is not an MP3"
+		#fi
 
 	elif [[ $FILETYPE != "wav" ]]
 	then
