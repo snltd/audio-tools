@@ -46,6 +46,7 @@ function usage
 
 		    name2tag   : tag the file from the filename. Assumes artist.title
 		    tag2name   : rename a file from the ID3/FLAC tag
+		    numname    : prefix the filename with the track number
 
 		    bump=n     : increase track number by 'n'
 		    sort       : put loose files in album-specific directories
@@ -133,6 +134,10 @@ case $CMD in
 	"number")
 		FUNC=number
 		NOTRACK=true
+		;;
+
+	"numname")
+		FUNC=numname
 		;;
 
 	"sort")

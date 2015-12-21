@@ -88,6 +88,7 @@ function mk_title
 
     EXPANDLIST=" dont=Don't youre=You're wont=Won't im=I'm cant=Can't
     thats=That's shes=She's &=and couldnt=Couldn't etc=Etc.
+    theres=there's
     wouldnt=Wouldn't hes=He's youve=You've youll=You'll its=It's
     weve=We've"
 
@@ -791,4 +792,18 @@ function strip_flac
     rm $TFILE
 }
 
+function numname
+{
+	# Prefix the filename with the track number
 
+	typeset -Z2 t_no
+
+	get_track_info_$FILETYPE "$1"
+	t_no=${TRACK[T_NO]}
+
+	if [[ -n $t_no ]]
+	then
+		print "$1 -> $t_no"
+		mv "$1" "${t_no}.$1"
+	fi
+}
