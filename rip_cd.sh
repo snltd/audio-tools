@@ -1,4 +1,4 @@
-#!/bin/ksh
+#!/bin/ksh 
 
 #=============================================================================
 #
@@ -11,7 +11,7 @@
 #-----------------------------------------------------------------------------
 # VARIABLES
 
-TOOL_DIR="/zonedata/tap-ws/local"
+TOOL_DIR="/zonedata/shark-ws/local"
 PATH=/usr/bin:/usr/sbin:${TOOL_DIR}/bin
 TMPDIR="/tmp/rip-$$"
 DISCINFO="${TMPDIR}/disc_info"
