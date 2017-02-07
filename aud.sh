@@ -55,6 +55,7 @@ function usage
 		    number     : number tracks, assuming the filename begins with
 		                 the track number
 		    inumber    : number tracks interactively
+            reencode   : convert to WAV and back to MP3/FLAC
 
 		    info       : show track information
 		    verify     : verify files -- only works for FLACs
@@ -162,6 +163,11 @@ case $CMD in
 
     "strip")
         FUNC=strip_flac
+        ;;
+
+    "reencode")
+        FUNC=reencode
+        NOTRACK=true
         ;;
 
 	*)	usage

@@ -166,11 +166,23 @@ function get_val_flac
 	print -- ${val#*=}
 }
 
+function get_val_mp3
+{
+    # $1 is the key
+    # $2 is the file
+
+    typeset val
+
+    val=$(id3info "$2" | grep $1)
+
+    print -- ${val#*: }
+}
+
 function get_bitrate_mp3
 {
-	# $1 is the file
+    # $1 is the file
 
-	id3info "$1" | sed -n '/^Bitrate/s/^.*: //p'
+    id3info "$1" | sed -n '/^Bitrate/s/^.*: //p'
 }
 
 function set_val
@@ -322,18 +334,6 @@ function get_track_info_wav
 	return
 }
 
-function get_val_mp3
-{
-	# $1 is the key
-	# $2 is the file
-
-	typeset val
-
-	val=$(id3info "$2" | grep $1)
-
-	print -- ${val#*: }
-}
-
 function get_track_info_mp3
 {
 	# Populates global variable TRACK with an associative array of the track
@@ -343,47 +343,84 @@ function get_track_info_mp3
 
 	file=$1
 
-	T_ARTIST=$(get_val_mp3 "TPE1" "$file")
-	GENRE=$(get_val_mp3 "TRCON" "$file")
+    T_ARTIST=$(mp3info -p "%a" "$file")
+    GENRE=$(mp3info -p "%g" "$file")
 	F_ARTIST=$(mk_fname "$T_ARTIST")
-	T_NO=$(get_val_mp3 "TRCK" "$file")
+	T_NO=$(mp3info -p "%n" "$file")
 
 	# The following works for most files I've found
 
+    mp3info -p "%r %y %t" "$file" | read bitrate year title
+
 	TRACK=(
-		[BITRATE]=$(get_bitrate_mp3 "$file")
-		[T_TITLE]=$(get_val_mp3 "TIT2" "$file")
-		[A_TITLE]=$(get_val_mp3 "TALB" "$file")
+        [BITRATE]=$bitrate
+        [T_TITLE]=$title
+		[A_TITLE]=$(mp3info -p "%l" "$file")
 		[T_ARTIST]=$T_ARTIST
-		[A_YEAR]=$(get_val_mp3 "TYER" "$file")
+		[A_YEAR]=$year
 		[GENRE]=${GENRE:-Alternative}
 		[T_NO]=${T_NO%/*}
 		[F_ARTIST]=${F_ARTIST#the_}
 	)
 
-	# But some files (encoded by iTunes?) use different field names. I hate
-	# hacks like this, but that's what you get when people don't stick to
-	# standards
-
-	[[ -z ${TRACK[T_ARTIST]} ]] \
-		&& TRACK[T_ARTIST]=$(get_val_mp3 "TP1" "$file")
-
-	[[ -z ${TRACK[A_TITLE]} ]] \
-		&& TRACK[A_TITLE]=$(get_val_mp3 "TAL" "$file")
-
-	[[ -z ${TRACK[T_TITLE]} ]] \
-		&& TRACK[T_TITLE]=$(get_val_mp3 "TT2" "$file")
-
-	[[ -z ${TRACK[A_YEAR]} ]] \
-		&& TRACK[A_YEAR]=$(get_val_mp3 "TYE" "$file")
-
-	[[ -z ${TRACK[T_NO]} ]] \
-		&& TRACK[T_NO]=$(get_val_mp3 "TPA" "$file")
-
 	# Track numbers are sometimes given as x/y
 
 	[[ ${TRACK[T_NO]} == *"/"* ]] \
 		&& TRACK[T_NO]=${TRACK[T_NO]%%/*}
+
+    [[ -z $TRACK[T_ARTIST] ]] && get_track_info_mp3_retry
+}
+
+function get_track_info_mp3_retry
+{
+    # Populates global variable TRACK with an associative array of the track
+    # information in an MP3
+
+    typeset T_ARTIST GENRE F_ARTIST T_NO
+
+    file=$1
+
+    T_ARTIST=$(get_val_mp3 "TPE1" "$file")
+    GENRE=$(get_val_mp3 "TRCON" "$file")
+    F_ARTIST=$(mk_fname "$T_ARTIST")
+    T_NO=$(get_val_mp3 "TRCK" "$file")
+
+    # The following works for most files I've found
+
+    TRACK=(
+        [BITRATE]=$(get_bitrate_mp3 "$file")
+        [T_TITLE]=$(get_val_mp3 "TIT2" "$file")
+        [A_TITLE]=$(get_val_mp3 "TALB" "$file")
+        [T_ARTIST]=$T_ARTIST
+        [A_YEAR]=$(get_val_mp3 "TYER" "$file")
+        [GENRE]=${GENRE:-Alternative}
+        [T_NO]=${T_NO%/*}
+        [F_ARTIST]=${F_ARTIST#the_}
+    )
+
+    # But some files (encoded by iTunes?) use different field names. I hate
+    # hacks like this, but that's what you get when people don't stick to
+    # standards
+
+    [[ -z ${TRACK[T_ARTIST]} ]] \
+        && TRACK[T_ARTIST]=$(get_val_mp3 "TP1" "$file")
+
+    [[ -z ${TRACK[A_TITLE]} ]] \
+        && TRACK[A_TITLE]=$(get_val_mp3 "TAL" "$file")
+
+    [[ -z ${TRACK[T_TITLE]} ]] \
+        && TRACK[T_TITLE]=$(get_val_mp3 "TT2" "$file")
+
+    [[ -z ${TRACK[A_YEAR]} ]] \
+        && TRACK[A_YEAR]=$(get_val_mp3 "TYE" "$file")
+
+    [[ -z ${TRACK[T_NO]} ]] \
+        && TRACK[T_NO]=$(get_val_mp3 "TPA" "$file")
+
+    # Track numbers are sometimes given as x/y
+
+    [[ ${TRACK[T_NO]} == *"/"* ]] \
+        && TRACK[T_NO]=${TRACK[T_NO]%%/*}
 }
 
 transcode_flac()
@@ -459,6 +496,8 @@ encode_flac()
 	# main(), so it's visible here. Kind of messy I know.
 	# $1 is the file to encode
 
+    typeset -Z2 t_no
+
 	if [[ -n $FLAC_DIR ]]
 	then
 		DEST_DIR="${FLAC_DIR}/$TARGET_DIR"
@@ -468,20 +507,17 @@ encode_flac()
 		[[ "$DEST_DIR" == "$1" ]] && DEST_DIR=$(pwd)
 	fi
 
-
 	[[ -d $DEST_DIR ]] || mkdir -p "$DEST_DIR"
+
+    t_no=$T_NO
 
 	if [[ -n $F_ARTIST ]]
 	then
-		OUTFILE="${DEST_DIR}/${F_ARTIST#the_}.$(mk_fname $T_TITLE).flac"
+		OUTFILE="${DEST_DIR}/${t_no}.${F_ARTIST#the_}.$(mk_fname \
+            $T_TITLE).flac"
 	else
 		OUTFILE="${1%.*}.flac"
 	fi
-
-	# Some albums have duplicate song names. Get around this by appending
-	# t_$TRACK_NO
-
-	[[ -f $OUTFILE && -n $T_NO ]] && OUTFILE="${OUTFILE%.*}_t_${T_NO}.flac"
 
 	print "  encoding '$1'"
 
@@ -631,23 +667,26 @@ function name2tag
 	# $1 is the file
 
 	typeset DIR file
+    typeset -i t_no
 
 	DIR=$(get_dir "$1")
 
 	# Work out the album name from the directory name
 
 	file=${1##*/}
+    print $file | sed 's/\./ /g' | read t_no artist title suffix
+    print $file | sed 's/\./ /g' | read t_no artist title suffix
 	album=${DIR##*/}
-	title=${file#*.}
-	artist="$(mk_title ${file%%.*})"
+	artist="$(mk_title $artist)"
 	album="$(mk_title ${album#*.})"
-	title="$(mk_title ${title%.*})"
+	title="$(mk_title $title)"
 
 	cat<<-EOINFO
 	$file
 	   album : $album
 	  artist : $artist
 	   title : $title
+	   track : $t_no
 
 	EOINFO
 
@@ -667,6 +706,7 @@ function tag2name
 
 	typeset -l info artist title fname
 	typeset DIR
+    typeset -Z2 t_no
 
 	DIR=$(get_dir "$1")
 	file=${1##*/}
@@ -678,12 +718,13 @@ function tag2name
 	artist=${TRACK[T_ARTIST]}
 	title=$(mk_fname ${TRACK[T_TITLE]})
 	artist=$(mk_fname ${artist#the_})
+    t_no=${TRACK[T_NO]}
 
 	if [[ -n $artist && -n $title ]]
 	then
 		fname="${artist}.${title}.$FILETYPE"
 		print "$1\n  -> ${fname}\n"
-		mv -i "$1" "${DIR}/$fname"
+        mv -i "$1" "${DIR}/${t_no}.$(print $fname | sed 's/^the_//')"
 	else
 		print "ERROR: can't get information for ${1##*/}"
 	fi

@@ -82,7 +82,7 @@ usage()
 {
 	cat <<-EOUSAGE
 	usage:
-	
+
 	  ${0##*/} <-m|-f> [-u] [-t a,b,c] [-d device]
 
 	  where
@@ -167,7 +167,7 @@ pgrep -f cdda2wav.*dev=$DEVICE >/dev/null && die "device $DEVICE in use"
 && die "nothing to encode to. Please supply -m and/or -f"
 
 # We need to know the device name cdrecord uses, and also the proper
-# physical device path. 
+# physical device path.
 
 print $DEVICE | tr , \  | read c t d
 
@@ -189,7 +189,7 @@ fi
 
 # If we're still running, we're ready to find out what the disc is. This can
 # get complicated, because CD IDs aren't unique. Grrr. These are the genres
-# that seem to work for me, but you can also add 
+# that seem to work for me, but you can also add
 # folk jazz country blues
 # newage reggae classical soundtrack data
 
@@ -202,7 +202,7 @@ then
 	print DISC_ID is $DISC_ID
 
 	for genre in misc rock country \
-		folk jazz blues newage soundtrack data classical reggae 
+		folk jazz blues newage soundtrack data classical reggae
 	do
 		cddb_query -q read $genre ${DISC_ID%% *} >${DISCINFO}_$i \
 			&& i=$(($i + 1))
@@ -223,12 +223,12 @@ then
 		-info-only \
 		-no-infofile \
 		-paranoia \
-	2>$TXT_INFO 
+	2>$TXT_INFO
 
 	[[ -s $TXT_INFO ]] \
 		|| die "nothing in CD-Text info file."
 
-	# Set a couple of default values, and work some other info out 
+	# Set a couple of default values, and work some other info out
 
 	D_ARTIST="Unknown Artist"
 	D_TRACKS=$(sed -n \
@@ -243,7 +243,7 @@ then
 
 		# XXX This is imperfect. First attempt, and probably won't work well
 		# for all cases
-	
+
 		# CD-Text only seems to give us an album name and track titles
 
 		print "Got CD-Text song titles:"
@@ -252,7 +252,7 @@ then
 
 		print "\nx :: exit and eject\n"
 		read "D_ARTIST?or enter artist name --> "
-		
+
 		if [[ x$D_ARTIST == xx || x$D_ARTIST = x ]]
 		then
 			eject $PHYS_DEV
@@ -264,7 +264,7 @@ then
 		cat <<-EODATA >$DISCINFO
 			Artist:   $D_ARTIST
 			Title:    $D_ALBUM
-			Ext.data: 
+			Ext.data:
 			Genre:    Alternative
 			Year:     2009
 			Length:   $D_LEN
@@ -279,7 +279,7 @@ then
 		print "No CD-Text info found. Proceeding as unknown album."
 
 		read "D_ARTIST?enter artist name (x to quit) --> "
-		
+
 		if [[ x$D_ARTIST == xx || x$D_ARTIST = x ]]
 		then
 			eject $PHYS_DEV
@@ -291,7 +291,7 @@ then
 		cat <<-EODATA >$DISCINFO
 			Artist:   $D_ARTIST
 			Title:    $D_ALBUM
-			Ext.data: 
+			Ext.data:
 			Genre:    Alternative
 			Year:     2009
 			Length:   $D_LEN
@@ -304,7 +304,7 @@ then
 
 		while [[ $TN -le $D_TRACKS ]]
 		do
-			print "  [$TN] 'Track $TN' by $D_ARTIST" 
+			print "  [$TN] 'Track $TN' by $D_ARTIST"
 			$((TN = $TN + 1))
 		done >> $DISCINFO
 
@@ -320,20 +320,20 @@ else
 	do
 		get_disc_info $file
 		print "\n$j :: $A_TITLE by $A_ARTIST ($A_YEAR)"
-		grep '\[01\]' $file 
+		grep '\[01\]' $file
 		t_arr[$j]=$file
 		j=$(($j + 1))
 	done
-	
+
 	print "\nx :: exit and eject\n"
 	read "num?ID to use --> "
-	
+
 	if [[ x$num == xx || x$num = x ]]
 	then
 		eject $PHYS_DEV
 		exit 0
 	fi
-	
+
 	mv ${t_arr[$num]} $DISCINFO
 fi
 
