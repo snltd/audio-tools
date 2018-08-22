@@ -1,0 +1,48 @@
+#!/usr/bin/env ruby
+
+require 'pathname'
+
+Encoding.default_external = Encoding::UTF_8
+Encoding.default_internal = Encoding::UTF_8
+
+abort "Usage: #{Pathname.new(__FILE__).basename} <file>..." if ARGV.empty?
+
+def metaflac_list_info(file)
+  `metaflac --list #{file}`
+rescue
+  puts "ERROR reading #{file}"
+  nil
+end
+
+def find_image_block(list_info)
+  current_block = nil
+
+  list_info.each_line do |l|
+    current_block = l[-2] if l.start_with?('METADATA')
+    return current_block if l =~ %r{image/}
+  end
+
+  nil
+rescue
+  false
+end
+
+ARGV.each do |arg|
+  file  = Pathname.new(arg).realpath
+
+  next unless file.extname == '.flac'
+
+  list_info = metaflac_list_info(file)
+
+  next unless list_info
+
+  block = find_image_block(list_info)
+
+  unless block
+    puts "ERROR reading #{file}" if block == false
+    next
+  end
+
+  puts "removing image in block #{block} of #{file}"
+  `metaflac --remove --dont-use-padding --block-number=#{block} #{file}`
+end

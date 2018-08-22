@@ -121,7 +121,7 @@ function mk_title
         if [[ $pr_word == *-* ]]
         then
             first_word=${pr_word%%-*}
-            word="${pr_word##*-}"
+            word="${pr_word#*-}"
 			initial=${word:0:1}
 
             if [[ $EXPANDLIST == *" ${word}="* ]]
@@ -368,7 +368,7 @@ function get_track_info_mp3
 	[[ ${TRACK[T_NO]} == *"/"* ]] \
 		&& TRACK[T_NO]=${TRACK[T_NO]%%/*}
 
-    [[ -z $TRACK[T_ARTIST] ]] && get_track_info_mp3_retry
+    [[ -z $TRACK[T_ARTIST] ]] && get_track_info_mp3_retry $file
 }
 
 function get_track_info_mp3_retry
@@ -847,4 +847,11 @@ function numname
 		print "$1 -> $t_no"
 		mv "$1" "${t_no}.$1"
 	fi
+}
+
+function split_flac
+{
+	cue=$(echo $1 | sed 's/flac$/cue/')
+	shnsplit -f "$cue" -o flac -t "%n.%p.%t" "$1"
+
 }
