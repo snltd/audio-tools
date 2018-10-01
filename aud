@@ -75,7 +75,7 @@ function usage
 #-----------------------------------------------------------------------------
 # SCRIPT STARTS HERE
 
-for tool in lame metaflac id3info flac
+for tool in lame metaflac mp3info flac
 do
     whence $tool >/dev/null 2>&1 || die "$tool binary is missing"
 done

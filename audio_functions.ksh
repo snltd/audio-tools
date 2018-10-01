@@ -182,7 +182,7 @@ function get_bitrate_mp3
 {
     # $1 is the file
 
-    id3info "$1" | sed -n '/^Bitrate/s/^.*: //p'
+    mp3info "$1" | sed -n '/^Audio: /s/^Audio: *\([^,]*\).*/\1/p'
 }
 
 function set_val
