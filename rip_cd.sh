@@ -1,4 +1,4 @@
-#!/bin/ksh 
+#!/bin/ksh
 
 #=============================================================================
 #
@@ -12,7 +12,7 @@
 # VARIABLES
 
 TOOL_DIR="/zonedata/shark-ws/local"
-PATH=/usr/bin:/usr/sbin:${TOOL_DIR}/bin
+PATH=/usr/bin:/usr/sbin:${TOOL_DIR}/bin:.:/opt/cddb/bin
 TMPDIR="/tmp/rip-$$"
 DISCINFO="${TMPDIR}/disc_info"
 TXT_INFO="${TMPDIR}/cd_text_info"
@@ -112,7 +112,7 @@ trap '[[ -n $PHYS_DEV ]] && eject $PHYS_DEV
 
 # Check we have the tools we need
 
-for tool in cdrecord lame flac cd-discid cddb_query cdda2wav
+for tool in cdrecord flac cd-discid cddb_query cdda2wav
 do
 	whence $tool >/dev/null 2>&1 || die "$tool binary is missing"
 done
