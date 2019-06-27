@@ -1,0 +1,54 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Downsample MP3s to 128kbps, for more cramming onto the iPod.
+# Use - as argument to read file listr from stdin.
+
+require 'pathname'
+require 'fileutils'
+
+BITRATE = 128
+
+abort 'usage: downsample <file>...' if ARGV.empty?
+
+def bitrate(file)
+  `id3info #{file}`.encode('UTF-8', 'UTF-8', invalid: :replace)
+                   .match(/Bitrate: (\d+)KBps/)[1].to_i
+rescue StandardError
+  nil
+end
+
+def printable_name(file)
+  bn = file.basename.to_s
+  bn.length < 35 ? bn : bn[0..32] + '...'
+end
+
+def status_line(info)
+  format('%<word>-20s %<rate>sKBps', info)
+end
+
+def downsample(file)
+  tmpfile = Pathname.new('/tmp/temp.mp3')
+  `lame --mp3input --silent -b #{BITRATE} #{file} #{tmpfile}`
+  FileUtils.mv(tmpfile, file)
+end
+
+args = ARGV == %w[-] ? ARGF.read.split("\n") : ARGV
+
+args.each do |f|
+  f = Pathname.new(f).realpath
+  next unless f.file? && f.extname == '.mp3'
+
+  br = bitrate(f)
+
+  print format('%-40s', printable_name(f))
+
+  if br.nil?
+    puts 'UNKNOWN'
+  elsif br > BITRATE
+    puts status_line(word: :TRANSCODING, rate: br)
+    downsample(f)
+  else
+    puts status_line(word: :OK, rate: br)
+  end
+end
