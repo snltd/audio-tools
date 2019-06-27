@@ -1,18 +1,9 @@
-#!/bin/ksh 
+#!/bin/ksh
 
-#=============================================================================
-#
 # rip_cd.sh
-# ---------
-#
-# Wrapper to lame
-#=============================================================================
 
-#-----------------------------------------------------------------------------
-# VARIABLES
-
-TOOL_DIR="/zonedata/shark-ws/local"
-PATH=/usr/bin:/usr/sbin:${TOOL_DIR}/bin
+TOOL_DIR=${HOME}/bin/$(uname -s)
+PATH=/usr/bin:/usr/sbin:${TOOL_DIR}:/opt/cddb/bin:.
 TMPDIR="/tmp/rip-$$"
 DISCINFO="${TMPDIR}/disc_info"
 TXT_INFO="${TMPDIR}/cd_text_info"
@@ -23,16 +14,13 @@ FLAC_DIR="/export/flac/new"
 # flags
 
 #ENCODE_MP3=true
-#ENCODE_FLAC=true
+ENCODE_FLAC=true
 
 . ${0%/*}/audio_functions.ksh
 
 typeset -i T_NO
 
 export LD_LIBRARY_PATH=${TOOL_DIR}/lib
-
-#-----------------------------------------------------------------------------
-# FUNCTIONS
 
 encode_file()
 {
@@ -107,12 +95,7 @@ trap '[[ -n $PHYS_DEV ]] && eject $PHYS_DEV
 	[[ -d $TMP_DIR ]] && rm -fr $TMP_DIR
 	exit' INT
 
-#-----------------------------------------------------------------------------
-# SCRIPT STARTS HERE
-
-# Check we have the tools we need
-
-for tool in cdrecord lame flac cd-discid cddb_query cdda2wav
+for tool in cdrecord flac cd-discid cddb_query cdda2wav
 do
 	whence $tool >/dev/null 2>&1 || die "$tool binary is missing"
 done
