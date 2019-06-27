@@ -182,7 +182,7 @@ function get_bitrate_mp3
 {
     # $1 is the file
 
-    id3info "$1" | sed -n '/^Bitrate/s/^.*: //p'
+    mp3info "$1" | sed -n '/^Audio: /s/^Audio: *\([^,]*\).*/\1/p'
 }
 
 function set_val
@@ -239,7 +239,6 @@ function set_val
 
 	elif [[ $1 == "mp3" ]]
 	then
-
 		case $2 in
 
 			artist|album|track|total|year|genre)
@@ -255,7 +254,7 @@ function set_val
 
 		esac
 
-		id3tag --${cmdkey}="$3" "$4" >/dev/null 2>&1
+		id3tag  --${cmdkey}="$3" "$4" >/dev/null 2>&1
 	else
 		print "unknown filetype [$1]"
 		return 1
@@ -525,14 +524,13 @@ encode_flac()
 		-s \
 		--best \
 		--force \
-        --keep-foreign-metadata \
 		-T "title=$T_TITLE" \
 		-T "artist=$T_ARTIST" \
 		-T "album=$A_TITLE" \
 		-T "date=$A_YEAR" \
 		-T "tracknumber=$T_NO" \
 		-o "$OUTFILE" \
-	"$1" 2>/dev/null
+	"$1"
 
 }
 
@@ -690,12 +688,13 @@ function name2tag
 
 	EOINFO
 
-	# We only have three things to change, so we'll call the set_val()
+	# We only have a few things to change, so we'll call the set_val()
 	# function three times. Inefficient, but it'll do for now.
 
 	set_val $FILETYPE "artist" "$artist" "$1"
 	set_val $FILETYPE "album" "$album" "$1"
 	set_val $FILETYPE "title" "$title" "$1"
+	set_val $FILETYPE "track" "$t_no" "$1"
 }
 
 function tag2name
