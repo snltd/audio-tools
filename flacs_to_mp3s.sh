@@ -20,7 +20,7 @@
 
 FLAC="/storage/flac"
 MP3="/storage/mp3"
-AUD_SH="${HOME}/bin/aud.sh"
+AUD_SH="${HOME}/work/audio_tools/aud"
 
 #-----------------------------------------------------------------------------
 # SCRIPT STARTS HERE
