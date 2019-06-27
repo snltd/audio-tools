@@ -2,8 +2,6 @@
 
 # rip_cd.sh
 
-TOOL_DIR=${HOME}/bin/$(uname -s)
-PATH=/usr/bin:/usr/sbin:${TOOL_DIR}:/opt/cddb/bin:.
 TMPDIR="/tmp/rip-$$"
 DISCINFO="${TMPDIR}/disc_info"
 TXT_INFO="${TMPDIR}/cd_text_info"
