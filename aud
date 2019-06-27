@@ -1,33 +1,14 @@
 #!/bin/ksh93
 
-#=============================================================================
-#
-# aud.sh
-# ------
-#
 # Manipulation of FLAC and MP3 files.
-#
-# R Fisher 04/09
-#
-# Please record changes below
-#
-# v1.0  Initial release.
-#
-#=============================================================================
-
-#-----------------------------------------------------------------------------
-# VARIABLES
 
 typeset -l FILETYPE
 typeset -A TRACK
 
-PATH=/usr/bin:/usr/local/bin
+PATH=/bin:/usr/bin:/usr/local/bin:/home/rob/work/audio_tools
 MYNAME=$0
 
-#-----------------------------------------------------------------------------
-# FUNCTIONS
-
-. ${0%/*}/audio_functions.ksh
+. ${HOME}/work/audio_tools/audio_functions.ksh
 
 function usage
 {
@@ -75,7 +56,7 @@ function usage
 #-----------------------------------------------------------------------------
 # SCRIPT STARTS HERE
 
-for tool in lame metaflac id3info flac
+for tool in lame metaflac mp3info flac
 do
     whence $tool >/dev/null 2>&1 || die "$tool binary is missing"
 done
