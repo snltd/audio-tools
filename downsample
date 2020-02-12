@@ -6,10 +6,18 @@
 
 require 'pathname'
 require 'fileutils'
+require 'tempfile'
+require 'optparse'
 
-BITRATE = 128
+bitrate = 128
 
 abort 'usage: downsample <file>...' if ARGV.empty?
+
+OptionParser.new do |o|
+  o.on('-b', '--bitrate INTEGER', 'set bitrate (default: 128)') do |b|
+    bitrate = b.to_i
+  end
+end.parse!
 
 def bitrate(file)
   `id3info #{file}`.encode('UTF-8', 'UTF-8', invalid: :replace)
@@ -27,15 +35,15 @@ def status_line(info)
   format('%<word>-20s %<rate>sKBps', info)
 end
 
-def downsample(file)
-  tmpfile = Pathname.new('/tmp/temp.mp3')
-  `lame --mp3input --silent -b #{BITRATE} #{file} #{tmpfile}`
+def downsample(file, bitrate)
+  tmpfile = Tempfile.new('downsample').path
+  `lame --mp3input --silent -b #{bitrate} #{file} #{tmpfile}`
   FileUtils.mv(tmpfile, file)
+rescue
+  puts "problem with #{file}"
 end
 
-args = ARGV == %w[-] ? ARGF.read.split("\n") : ARGV
-
-args.each do |f|
+ARGV.each do |f|
   f = Pathname.new(f).realpath
   next unless f.file? && f.extname == '.mp3'
 
@@ -45,9 +53,9 @@ args.each do |f|
 
   if br.nil?
     puts 'UNKNOWN'
-  elsif br > BITRATE
+  elsif br > bitrate
     puts status_line(word: :TRANSCODING, rate: br)
-    downsample(f)
+    downsample(f, bitrate)
   else
     puts status_line(word: :OK, rate: br)
   end
