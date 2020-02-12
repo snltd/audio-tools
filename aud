@@ -5,7 +5,7 @@
 typeset -l FILETYPE
 typeset -A TRACK
 
-PATH=/bin:/usr/bin:/usr/local/bin:/home/rob/work/audio_tools
+PATH=/bin:/usr/bin:${HOME}/bin/$(uname -s):/opt/local/bin:/home/rob/work/audio_tools
 MYNAME=$0
 
 . ${HOME}/work/audio_tools/audio_functions.ksh

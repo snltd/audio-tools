@@ -21,7 +21,7 @@
 typeset -l FILETYPE
 typeset -A TRACK
 
-PATH=/usr/bin:/usr/local/bin
+PATH=/usr/bin:/usr/local/bin:/opt/ooce/bin
 MYNAME=$0
 
 #-----------------------------------------------------------------------------
