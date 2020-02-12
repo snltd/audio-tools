@@ -2,6 +2,8 @@
 
 # rip_cd.sh
 
+PATH=/bin:/opt/ooce/bin:/opt/sysdef/bin:/opt/sysdef/bin/amd64
+
 TMPDIR="/tmp/rip-$$"
 DISCINFO="${TMPDIR}/disc_info"
 TXT_INFO="${TMPDIR}/cd_text_info"
