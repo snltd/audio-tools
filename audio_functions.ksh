@@ -59,7 +59,7 @@ function mk_fname
 
 	typeset -l outname="$*"
 
-	print $outname | sed 's/ \{1,\}/_/g;s/[^0-9a-z._-]//g'
+	print $outname | sed 's/ *\/ */-/g;s/ \{1,\}/_/g;s/[^0-9a-z._-]//g'
 }
 
 function mk_title

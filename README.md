@@ -19,7 +19,7 @@ reasonably recent version should be fine.
 
 The scripts were written on Solaris, and some of them need ksh93.
 
-## `aud.sh`
+## `aud`
 
 This is the main script. It's a bit of a "swiss-army knife" job, with
 several commands. You can use it to manipulate FLAC, WAV, and MP3 files.
@@ -27,7 +27,7 @@ Unless otherwise stated, commands work for both FLAC and MP3.
 
 ### Usage
 
-    aud.sh <command> <files>
+    aud <command> <files>
 
 The following commands are available.
 
@@ -77,14 +77,14 @@ files it finds to `front.jpg` or `front.png`.
 
 ## `flac_find_24-bit.sh`
 
-Uses `aud.sh` to find hi-rez audio files, and links them to a directory.
+Uses `aud` to find hi-rez audio files, and links them to a directory.
 Can you hear the difference? I'm not sure I can.
 
 ## flac_missing_tags.sh
 
 Supply a directory, and it will dig through that directory with
-`find(1)`, look at every FLAC it finds with `aud.sh`, and report back if
-any of the tags which `aud.sh info` displays are blank. Only use this if
+`find(1)`, look at every FLAC it finds with `aud`, and report back if
+any of the tags which `aud info` displays are blank. Only use this if
 you are a bit OCD.
 
 ## `rip_cd.sh`

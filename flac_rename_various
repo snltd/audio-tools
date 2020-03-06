@@ -1,7 +1,6 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-#
 # rip_cd can't handle various artist albums if they're ripped using
 # CD-TEXT. This may fix the broken names.
 

@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require 'pathname'
+require 'fileutils'
 
 Encoding.default_external = Encoding::UTF_8
 Encoding.default_internal = Encoding::UTF_8
@@ -9,7 +10,7 @@ Encoding.default_internal = Encoding::UTF_8
 abort "Usage: #{Pathname.new(__FILE__).basename} <file>..." if ARGV.empty?
 
 def metaflac_list_info(file)
-  `metaflac --list #{file}`
+  `metaflac --list "#{file}"`
 rescue StandardError
   puts "ERROR reading #{file}"
   nil
@@ -39,11 +40,10 @@ ARGV.each do |arg|
 
   block = find_image_block(list_info)
 
-  unless block
-    puts "ERROR reading #{file}" if block == false
-    next
-  end
+  next unless block
 
+  touch_ref = file.mtime
   puts "removing image in block #{block} of #{file}"
-  `metaflac --remove --dont-use-padding --block-number=#{block} #{file}`
+  `metaflac --remove --dont-use-padding --block-number=#{block} "#{file}"`
+  FileUtils.touch(file, mtime: touch_ref)
 end
