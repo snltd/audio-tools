@@ -1,0 +1,28 @@
+#!/bin/ksh
+
+# The iPod dataset gets tweaked quite a lot, but its changes get pushed back
+# into the MP3 dataset.
+# This script creates a new iPod dataset from a clone of the MP3 one. If it
+# looks okay, manually destroy the old one, rename the new one, and run
+# Puppet.
+
+IPOD_FILELIST="/tmp/ipod_file_list"
+MP3_FILELIST="/tmp/mp3_file_list"
+MP3_DATASET="big/mp3"
+IPOD_DATASET="big/ipodtest"
+IPOD_MOUNTPOINT=/export/ipodtest
+CLONESNAP="${MP3_DATASET}@ipod_clone"
+
+find /export/ipod -type d | cut -d/ -f4- | sort >$IPOD_FILELIST
+find /export/mp3 -type d | cut -d/ -f4- | sort >$MP3_FILELIST
+
+zfs snapshot $CLONESNAP
+zfs clone $CLONESNAP $IPOD_DATASET
+zfs set mountpoint=$IPOD_MOUNTPOINT $IPOD_DATASET
+
+comm -23 $MP3_FILELIST $IPOD_FILELIST | while read d
+do
+  rm -fr ${IPOD_MOUNTPOINT}/$d
+done
+
+rm $IPOD_FILELIST $MP3_FILELIST
