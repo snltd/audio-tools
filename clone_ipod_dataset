@@ -6,22 +6,35 @@
 # looks okay, manually destroy the old one, rename the new one, and run
 # Puppet.
 
+PATH=/bin:/usr/sbin
 IPOD_FILELIST="/tmp/ipod_file_list"
 MP3_FILELIST="/tmp/mp3_file_list"
 MP3_DATASET="big/mp3"
 IPOD_DATASET="big/ipodtest"
 IPOD_MOUNTPOINT=/export/ipodtest
-CLONESNAP="${MP3_DATASET}@ipod_clone"
+CLONESNAP="${MP3_DATASET}@ipod_clone-$(date +%s)"
+
+if [[ $(uname -n) != "cube" || $(whoami) != "root" ]]
+then
+	print -u2 "Only run this script on cube, as root"
+	exit 1
+fi
+
+rsync -urv /export/ipod/ /export/mp3/
 
 find /export/ipod -type d | cut -d/ -f4- | sort >$IPOD_FILELIST
 find /export/mp3 -type d | cut -d/ -f4- | sort >$MP3_FILELIST
 
+print "creating $CLONESNAP"
 zfs snapshot $CLONESNAP
+print "cloning to $IPOD_DATASET"
 zfs clone $CLONESNAP $IPOD_DATASET
+print "mounting at $IPOD_MOUNTPOINT"
 zfs set mountpoint=$IPOD_MOUNTPOINT $IPOD_DATASET
 
 comm -23 $MP3_FILELIST $IPOD_FILELIST | while read d
 do
+  print "removing ${IPOD_MOUNTPOINT}/$d"
   rm -fr ${IPOD_MOUNTPOINT}/$d
 done
 
