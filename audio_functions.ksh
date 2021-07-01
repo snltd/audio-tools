@@ -85,12 +85,12 @@ function mk_title
     # latter. I think it's more likely that the title contains "can't"
     # or "won't" than "cant" or "wont". It's/its is more
     # difficult...
-
+	# Note the leading space on the line. That's important.
+	#
     EXPANDLIST=" dont=Don't youre=You're wont=Won't im=I'm cant=Can't
-    thats=That's shes=She's &=and couldnt=Couldn't etc=Etc.
-    theres=there's
-    wouldnt=Wouldn't hes=He's youve=You've youll=You'll its=It's
-    weve=We've"
+     thats=That's shes=She's &=and couldnt=Couldn't etc=Etc. theres=there's
+	 ive=I've wouldnt=Wouldn't hes=He's youve=You've youll=You'll its=It's
+     weve=We've"
 
 	typeset -i i=1
 	typeset -u initial
@@ -99,7 +99,6 @@ function mk_title
 
 	for word in $(print $* | tr _ ' ')
 	do
-
 		if [[ $i -gt 1 && $NOCAPSLIST == *" $word "* && $i != $words ]]
 		then
 			pr_word=$word
@@ -342,19 +341,23 @@ function get_track_info_mp3
 
 	file=$1
 
-    T_ARTIST=$(mp3info -p "%a" "$file")
-    GENRE=$(mp3info -p "%g" "$file")
+	inf=$(id3info "$file")
+
+	T_ARTIST=$(print "$inf" | sed -n '/TPE/s/^.*): //p')
+    #GENRE=$(mp3info -p "%g" "$file")
 	F_ARTIST=$(mk_fname "$T_ARTIST")
-	T_NO=$(mp3info -p "%n" "$file")
+	T_NO=$(print "$inf" | sed -n '/TRCK/s/^.*): //p')
+	year=$(print "$inf" | sed -n '/TYER/s/^.*): //p')
+	title=$(print "$inf" | sed -n '/TIT/s/^.*): //p')
+	album=$(print "$inf" | sed -n '/TALB/s/^.*): //p')
+	bitrate=$(print "$inf" | sed -n '/^Bitrate/s/Bitrate: //p')
 
-	# The following works for most files I've found
-
-    mp3info -p "%r %y %t" "$file" | read bitrate year title
+	F_ARTIST=$(mk_fname "$T_ARTIST")
 
 	TRACK=(
         [BITRATE]=$bitrate
         [T_TITLE]=$title
-		[A_TITLE]=$(mp3info -p "%l" "$file")
+		[A_TITLE]=$album
 		[T_ARTIST]=$T_ARTIST
 		[A_YEAR]=$year
 		[GENRE]=${GENRE:-Alternative}
@@ -445,6 +448,8 @@ transcode_flac()
 		-h \
 		--vbr-new \
 		--preset 128 \
+		--id3v2-only \
+		--add-id3v2 \
 		--silent \
 		--tt "${TRACK[T_TITLE]}" \
 		--ta "${TRACK[T_ARTIST]}" \
@@ -491,7 +496,7 @@ encode_mp3()
 
 encode_flac()
 {
-	# Encode a wav to FLAC. All the tag stuff has just been set in the
+	# Encode a wav or ape to FLAC. All the tag stuff has just been set in the
 	# main(), so it's visible here. Kind of messy I know.
 	# $1 is the file to encode
 
@@ -520,17 +525,22 @@ encode_flac()
 
 	print "  encoding '$1'"
 
-	flac \
-		-s \
-		--best \
-		--force \
-		-T "title=$T_TITLE" \
-		-T "artist=$T_ARTIST" \
-		-T "album=$A_TITLE" \
-		-T "date=$A_YEAR" \
-		-T "tracknumber=$T_NO" \
-		-o "$OUTFILE" \
-	"$1"
+	if [[ $FILETYPE == "ape" ]]
+	then
+		ffmpeg -i "$1" "$OUTFILE"
+	else
+		flac \
+			-s \
+			--best \
+			--force \
+			-T "title=$T_TITLE" \
+			-T "artist=$T_ARTIST" \
+			-T "album=$A_TITLE" \
+			-T "date=$A_YEAR" \
+			-T "tracknumber=$T_NO" \
+			-o "$OUTFILE" \
+		"$1"
+	fi
 
 }
 
@@ -816,7 +826,7 @@ function strip_flac
 
     if metaflac --list "$1" | egrep -s "ALBUM ARTIST|ALBUMARTIST|ENSEMBLE"
     then
-        print "  moving extraneous tags"
+        print "  removing extraneous tags"
         metaflac --remove-tag=ALBUMARTIST \
                 --remove-tag="ALBUM ARTIST" \
                 --remove-tag=ENSEMBLE "$1"

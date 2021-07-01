@@ -32,7 +32,7 @@ function usage
 		    bump=n     : increase track number by 'n'
 		    sort       : put loose files in album-specific directories
 		    transcode  : convert flac files to MP3, preserving tags
-		    toflac     : convert wav files to flac
+		    toflac     : convert wav or ape files to flac
 		    number     : number tracks, assuming the filename begins with
 		                 the track number
 		    inumber    : number tracks interactively
@@ -56,7 +56,7 @@ function usage
 #-----------------------------------------------------------------------------
 # SCRIPT STARTS HERE
 
-for tool in lame metaflac mp3info flac
+for tool in lame metaflac id3info mp3info flac ffmpeg
 do
     whence $tool >/dev/null 2>&1 || die "$tool binary is missing"
 done
@@ -196,6 +196,9 @@ do
 			#print "'${file}' is not an MP3"
 		#fi
 
+	elif [[ $FILETYPE == "ape" ]]
+	then
+		:
 	elif [[ $FILETYPE != "wav" ]]
 	then
 		print "'${FILETYPE}' files are not supported."
