@@ -164,11 +164,11 @@ mkdir -p $TMPDIR
 
 # Everything looks good. Let's stop volume management, if it's running
 
-if [[ $(svcs -Ho STATE rmvolmgr) = "enabled" ]]
-then
-	svcadm disable -t rmvolmgr
-	ENABLE_VOLMGT=true
-fi
+#if [[ $(svcs -Ho STATE rmvolmgr) = "enabled" ]]
+#then
+	#svcadm disable -t rmvolmgr
+	#ENABLE_VOLMGT=true
+#fi
 
 # If we're still running, we're ready to find out what the disc is. This can
 # get complicated, because CD IDs aren't unique. Grrr. These are the genres
