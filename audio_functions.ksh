@@ -79,7 +79,7 @@ function mk_title
     nor notwithstanding of off on onto opposite or out outside over past
     per plus regarding round save since so than the through throughout
     till times to toward towards under underneath unlike until up upon
-    via vs when with within without worth yet "
+    via vs when with within without worth yet are est le la un une de "
 
     # The following word pairs get expanded from the former to the
     # latter. I think it's more likely that the title contains "can't"
@@ -88,9 +88,10 @@ function mk_title
 	# Note the leading space on the line. That's important.
 	#
     EXPANDLIST=" dont=Don't youre=You're wont=Won't im=I'm cant=Can't
-     thats=That's shes=She's &=and couldnt=Couldn't etc=Etc. theres=there's
+     thats=That's shes=She's &=and couldnt=Couldn't etc=Etc. theres=There's
 	 ive=I've wouldnt=Wouldn't hes=He's youve=You've youll=You'll its=It's
-     weve=We've"
+     weve=We've aint=Ain't didnt=Didn't lets=Let's isnt=Isn't n='n'
+	 havent=Haven't everybodys=Everybody's id I'd whats=What's "
 
 	typeset -i i=1
 	typeset -u initial
@@ -307,7 +308,7 @@ function get_track_info_flac
 				;;
 
 			"tracknumber")
-				TRACK[T_NO]=$val
+				TRACK[T_NO]=$(echo $val | sed 's|/.*||')
 				;;
 
 			"genre")

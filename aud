@@ -5,7 +5,7 @@
 typeset -l FILETYPE
 typeset -A TRACK
 
-PATH=/bin:/usr/bin:${HOME}/bin/$(uname -s):/opt/local/bin:/home/rob/work/audio_tools
+PATH=/opt/sysdef/ffmpeg/bin:/bin:/usr/bin:${HOME}/bin/$(uname -s):/opt/local/bin:/home/rob/work/audio_tools
 MYNAME=$0
 
 . ${HOME}/work/audio_tools/audio_functions.ksh
@@ -56,7 +56,7 @@ function usage
 #-----------------------------------------------------------------------------
 # SCRIPT STARTS HERE
 
-for tool in lame metaflac id3info mp3info flac ffmpeg
+for tool in lame metaflac mp3info flac ffmpeg
 do
     whence $tool >/dev/null 2>&1 || die "$tool binary is missing"
 done
