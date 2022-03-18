@@ -390,6 +390,7 @@ wait
 
 rm -fr $TMPDIR
 
+chown -R rob $FLAC_DIR
 [[ -n $ENABLE_VOLMGT ]] && svcadm enable rmvolmgr
 
 eject $PHYS_DEV
