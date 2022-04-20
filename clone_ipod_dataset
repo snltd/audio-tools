@@ -1,18 +1,18 @@
 #!/bin/ksh
 
-# The iPod dataset gets tweaked quite a lot, but its changes get pushed back
-# into the MP3 dataset.
-# This script creates a new iPod dataset from a clone of the MP3 one. If it
-# looks okay, manually destroy the old one, rename the new one, and run
-# Puppet.
+# Creates a new iPod dataset from a clone of the MP3 one.
 
 PATH=/bin:/usr/sbin
+STAMP=$(date +%s)
 IPOD_FILELIST="/tmp/ipod_file_list"
 MP3_FILELIST="/tmp/mp3_file_list"
 MP3_DATASET="big/mp3"
-IPOD_DATASET="big/ipodtest"
-IPOD_MOUNTPOINT=/export/ipodtest
-CLONESNAP="${MP3_DATASET}@ipod_clone-$(date +%s)"
+NEW_IPOD_DATASET="big/ipod_$STAMP"
+IPOD_DATASET="big/ipod"
+ARCHIVED_IPOD_DATASET="big/ipod_archive"
+TEMP_IPOD_MOUNTPOINT="/export/ipod_new"
+IPOD_MOUNTPOINT="/export/ipod"
+CLONESNAP="${MP3_DATASET}@ipod_clone-$STAMP"
 
 if [[ $(uname -n) != "cube" || $(whoami) != "root" ]]
 then
@@ -20,22 +20,42 @@ then
 	exit 1
 fi
 
-rsync -urv /export/ipod/ /export/mp3/
-
+print "generating file lists"
 find /export/ipod -type d | cut -d/ -f4- | sort >$IPOD_FILELIST
 find /export/mp3 -type d | cut -d/ -f4- | sort >$MP3_FILELIST
 
 print "creating $CLONESNAP"
 zfs snapshot $CLONESNAP
-print "cloning to $IPOD_DATASET"
-zfs clone $CLONESNAP $IPOD_DATASET
-print "mounting at $IPOD_MOUNTPOINT"
-zfs set mountpoint=$IPOD_MOUNTPOINT $IPOD_DATASET
+print "cloning to $NEW_IPOD_DATASET"
+zfs clone $CLONESNAP $NEW_IPOD_DATASET
+print "mounting at $TEMP_IPOD_MOUNTPOINT"
+zfs set mountpoint=$TEMP_IPOD_MOUNTPOINT $NEW_IPOD_DATASET
+
+print "removing redundant files"
 
 comm -23 $MP3_FILELIST $IPOD_FILELIST | while read d
 do
-  print "removing ${IPOD_MOUNTPOINT}/$d"
-  rm -fr ${IPOD_MOUNTPOINT}/$d
+  rm -fr ${TEMP_IPOD_MOUNTPOINT}/$d
 done
 
 rm $IPOD_FILELIST $MP3_FILELIST
+
+if zfs list $ARCHIVED_IPOD_DATASET >/dev/null 2>&1
+then
+	print "destroying archived iPod dataset"
+	zfs destroy -r $ARCHIVED_IPOD_DATASET
+fi
+
+print "unmounting new iPod dataset"
+zfs umount $NEW_IPOD_DATASET
+print "unmounting existing iPod dataset"
+zfs umount $IPOD_DATASET
+print "archive existing iPod dataset"
+zfs rename $IPOD_DATASET $ARCHIVED_IPOD_DATASET
+zfs set mountpoint=none $ARCHIVED_IPOD_DATASET
+print "promoting new iPod dataset"
+zfs rename $NEW_IPOD_DATASET $IPOD_DATASET
+zfs set mountpoint=$IPOD_MOUNTPOINT $IPOD_DATASET
+zfs mount $IPOD_DATASET
+
+/opt/ooce/bin/puppet agent -t
