@@ -14,9 +14,9 @@ TEMP_IPOD_MOUNTPOINT="/export/ipod_new"
 IPOD_MOUNTPOINT="/export/ipod"
 CLONESNAP="${MP3_DATASET}@ipod_clone-$STAMP"
 
-if [[ $(uname -n) != "cube" || $(whoami) != "root" ]]
+if [[ $(uname -n) != "serv" || $(whoami) != "root" ]]
 then
-	print -u2 "Only run this script on cube, as root"
+	print -u2 "Only run this script on serv, as root"
 	exit 1
 fi
 
@@ -58,4 +58,3 @@ zfs rename $NEW_IPOD_DATASET $IPOD_DATASET
 zfs set mountpoint=$IPOD_MOUNTPOINT $IPOD_DATASET
 zfs mount $IPOD_DATASET
 
-/opt/ooce/bin/puppet agent -t
